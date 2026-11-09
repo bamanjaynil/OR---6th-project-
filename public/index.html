@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CIVICGRID — Smart City Infrastructure Investment Optimizer</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for High-End Dynamic Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- KaTeX Math Typesetting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <!-- Custom Dark Smart-City Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="selection:bg-cyan-500 selection:text-black">
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Canvas Hover Tooltip -->
+    <div id="paretoTooltip"></div>
+
+    <div class="flex min-h-screen">
+
+        <!-- ==================== SIDEBAR NAVIGATION ==================== -->
+        <aside id="sidebar" class="w-64 flex-shrink-0 flex flex-col justify-between p-4 fixed lg:sticky top-0 h-screen transition-all duration-200">
+            <div>
+                <!-- Brand Header -->
+                <div class="flex items-center gap-3 px-2 py-3 border-b border-slate-800/80 mb-5">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 border border-cyan-400/30">
+                        <i class="fa-solid fa-city text-lg"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="font-extrabold text-base tracking-wider text-white">CIVICGRID</span>
+                            <span class="pill pill-cyan text-[9px] uppercase px-1.5 py-0">v2.0</span>
+                        </div>
+                        <p class="text-[10px] text-cyan-400/80 font-mono tracking-tight">Smarter Investments. Better Cities.</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <nav class="space-y-1.5" aria-label="Main Navigation">
+                    <button onclick="navigateTo('overview')" id="nav-overview" class="nav-link w-full text-left active">
+                        <i class="fa-solid fa-gauge-high w-5 text-center text-cyan-400"></i>
+                        <span>Overview</span>
+                    </button>
+                    <button onclick="navigateTo('projects')" id="nav-projects" class="nav-link w-full text-left">
+                        <i class="fa-solid fa-list-check w-5 text-center text-sky-400"></i>
+                        <span>Projects</span>
+                        <span id="sidebarProjectCount" class="ml-auto pill pill-neutral text-[10px]">12</span>
+                    </button>
+                    <button onclick="navigateTo('optimization')" id="nav-optimization" class="nav-link w-full text-left">
+                        <i class="fa-solid fa-sliders w-5 text-center text-indigo-400"></i>
+                        <span>Optimization</span>
+                    </button>
+                    <button onclick="navigateTo('results')" id="nav-results" class="nav-link w-full text-left">
+                        <i class="fa-solid fa-chart-pie w-5 text-center text-emerald-400"></i>
+                        <span>Results & Insights</span>
+                    </button>
+                    <button onclick="navigateTo('methodology')" id="nav-methodology" class="nav-link w-full text-left">
+                        <i class="fa-solid fa-graduation-cap w-5 text-center text-amber-400"></i>
+                        <span>Methodology / About</span>
+                    </button>
+                </nav>
+
+                <!-- Quick Presets in Sidebar -->
+                <div class="mt-6 pt-4 border-t border-slate-800/60">
+                    <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 block px-2 mb-2">
+                        <i class="fa-solid fa-layer-group text-cyan-400 mr-1.5"></i>Quick Scenarios
+                    </span>
+                    <div class="space-y-1">
+                        <button onclick="applyScenario('standard')" id="scen-standard" class="scenario-pill w-full text-left active">
+                            SPV Standard (₹850 Cr)
+                        </button>
+                        <button onclick="applyScenario('tight')" id="scen-tight" class="scenario-pill w-full text-left">
+                            Tight Municipal (₹450 Cr)
+                        </button>
+                        <button onclick="applyScenario('green')" id="scen-green" class="scenario-pill w-full text-left">
+                            Green Climate (95 kT)
+                        </button>
+                        <button onclick="applyScenario('greedytrap')" id="scen-greedytrap" class="scenario-pill w-full text-left" title="Demonstrates where Greedy SROI-ranking fails compared to Exact Branch & Bound">
+                            <i class="fa-solid fa-triangle-exclamation mr-1 text-amber-400"></i>Greedy Trap Demo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer / System Telemetry -->
+            <div class="pt-4 border-t border-slate-800/80">
+                <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Backend API:</span>
+                        <span id="backendStatusBadge" class="pill pill-cyan cursor-pointer">
+                            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span> Fastify + SQLite
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                        <span>Database:</span>
+                        <span class="text-slate-300">smart_city.db</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono text-slate-500">
+                        <span>Algorithm:</span>
+                        <span class="text-cyan-400 font-semibold">Exact 0-1 ILP</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ==================== MAIN CONTENT WRAPPER ==================== -->
+        <div class="flex-1 flex flex-col min-w-0">
+
+            <!-- Top Navigation Bar -->
+            <header class="sticky top-0 z-30 bg-[#070d1e]/85 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 hover:text-white p-2 rounded-lg bg-slate-800">
+                        <i class="fa-solid fa-bars text-base"></i>
+                    </button>
+                    <div>
+                        <div class="flex items-center gap-2 text-xs font-mono text-slate-400">
+                            <span>CIVICGRID</span>
+                            <span class="text-slate-600">/</span>
+                            <span id="breadcrumbCurrent" class="text-cyan-400 font-semibold">Overview</span>
+                        </div>
+                        <h2 id="topBarTitle" class="text-base sm:text-lg font-bold text-white tracking-tight mt-0.5">
+                            Executive Overview & Impact Summary
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2.5">
+                    <!-- Stale Indicator Badge -->
+                    <div id="staleIndicator" class="hidden pill pill-amber stale-pulse text-[11px]">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Inputs Changed — Re-solve Required
+                    </div>
+
+                    <!-- Demo Mode Toggle -->
+                    <button onclick="toggleDemoMode()" id="btnDemoMode" class="btn-secondary text-xs">
+                        <i class="fa-solid fa-flask text-indigo-400"></i> <span id="demoModeText">Demo Mode: Off</span>
+                    </button>
+
+                    <!-- Run Optimization CTA -->
+                    <button onclick="executeOptimizationWithLoading()" id="btnTopRunOpt" class="btn-primary text-xs">
+                        <i class="fa-solid fa-bolt"></i> Run Optimization
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Page Body -->
+            <main class="flex-1 p-4 lg:p-8 space-y-6 max-w-[1600px] w-full mx-auto">
+
+                <!-- ==================== PAGE 1: OVERVIEW DASHBOARD ==================== -->
+                <section id="page-overview" class="page-view space-y-6">
+                    
+                    <!-- Visual Hero Section with Atmospheric Futuristic City Visual -->
+                    <div class="hero-city-wrapper p-6 sm:p-8 relative">
+                        <div class="hero-city-overlay"></div>
+                        
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+                            <!-- Left: Hero Text & Call to Action -->
+                            <div class="lg:col-span-7 space-y-4">
+                                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs font-mono">
+                                    <i class="fa-solid fa-microchip"></i>
+                                    <span>Operations Research • 0-1 Integer Programming Framework</span>
+                                </div>
+                                <h1 class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                                    Designing the Smart Cities of Tomorrow
+                                </h1>
+                                <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl">
+                                    Optimize public infrastructure investments using Integer Programming. Select the right combination of projects to maximize Social Rate of Interest (SROI) within limited municipal budgets.
+                                </p>
+                                <div class="flex flex-wrap items-center gap-3 pt-2">
+                                    <button onclick="navigateTo('projects')" class="btn-secondary text-sm">
+                                        <i class="fa-solid fa-folder-open text-sky-400"></i> Explore Projects
+                                    </button>
+                                    <button onclick="navigateTo('optimization')" class="btn-primary text-sm">
+                                        <i class="fa-solid fa-bolt"></i> Run Optimization
+                                    </button>
+                                    <button onclick="applyScenario('greedytrap')" class="btn-accent text-sm">
+                                        <i class="fa-solid fa-play"></i> Watch Greedy Trap Demo
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Right: Exquisite Vector Futuristic Smart City Skyline Visual -->
+                            <div class="lg:col-span-5 flex justify-center">
+                                <div class="w-full max-w-md h-56 sm:h-64 relative flex items-center justify-center">
+                                    <svg viewBox="0 0 500 280" class="w-full h-full drop-shadow-[0_0_25px_rgba(34,211,238,0.25)]">
+                                        <defs>
+                                            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#0a183d" stop-opacity="0.8"/>
+                                                <stop offset="100%" stop-color="#050817" stop-opacity="0.95"/>
+                                            </linearGradient>
+                                            <linearGradient id="bldgGrad1" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#1e3a8a"/>
+                                                <stop offset="100%" stop-color="#09142f"/>
+                                            </linearGradient>
+                                            <linearGradient id="bldgGrad2" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#0284c7"/>
+                                                <stop offset="100%" stop-color="#061838"/>
+                                            </linearGradient>
+                                            <linearGradient id="cyanBeam" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.8"/>
+                                                <stop offset="100%" stop-color="#0284c7" stop-opacity="0"/>
+                                            </linearGradient>
+                                        </defs>
+
+                                        <!-- Horizon Glow & Grid -->
+                                        <rect width="500" height="280" fill="url(#skyGrad)" rx="16"/>
+                                        <path d="M 0 250 L 500 250 M 0 260 L 500 260 M 0 270 L 500 270" stroke="rgba(34,211,238,0.15)" stroke-width="1"/>
+                                        <path d="M 50 280 L 150 240 M 200 280 L 220 240 M 350 280 L 320 240 M 450 280 L 380 240" stroke="rgba(34,211,238,0.15)" stroke-width="1"/>
+
+                                        <!-- Background Silhouette Buildings -->
+                                        <rect x="30" y="110" width="45" height="130" fill="#0d1b3e" opacity="0.7"/>
+                                        <rect x="85" y="80" width="55" height="160" fill="#0f2352" opacity="0.7"/>
+                                        <rect x="150" y="130" width="40" height="110" fill="#0d1b3e" opacity="0.7"/>
+                                        <rect x="310" y="90" width="50" height="150" fill="#0f2352" opacity="0.7"/>
+                                        <rect x="370" y="120" width="60" height="120" fill="#0d1b3e" opacity="0.7"/>
+                                        <rect x="435" y="100" width="45" height="140" fill="#0f2352" opacity="0.7"/>
+
+                                        <!-- Foreground High-Tech Skyscrapers -->
+                                        <!-- Tower 1: Left Telecom Spine -->
+                                        <rect x="55" y="60" width="35" height="180" fill="url(#bldgGrad1)" stroke="rgba(34,211,238,0.4)" stroke-width="1"/>
+                                        <line x1="72" y1="60" x2="72" y2="25" stroke="#22d3ee" stroke-width="2"/>
+                                        <circle cx="72" cy="25" r="3" fill="#22d3ee"/>
+
+                                        <!-- Tower 2: Stepped Center-Left -->
+                                        <rect x="110" y="40" width="60" height="200" fill="url(#bldgGrad2)" stroke="rgba(56,189,248,0.4)" stroke-width="1"/>
+                                        <line x1="140" y1="40" x2="140" y2="15" stroke="#818cf8" stroke-width="2"/>
+                                        <circle cx="140" cy="15" r="4" fill="#818cf8"/>
+                                        <!-- Illuminated Windows -->
+                                        <g fill="#22d3ee" opacity="0.85">
+                                            <rect x="120" y="55" width="6" height="4"/>
+                                            <rect x="135" y="55" width="6" height="4"/>
+                                            <rect x="150" y="55" width="6" height="4"/>
+                                            <rect x="120" y="70" width="6" height="4"/>
+                                            <rect x="150" y="70" width="6" height="4"/>
+                                            <rect x="120" y="85" width="6" height="4"/>
+                                            <rect x="135" y="85" width="6" height="4"/>
+                                            <rect x="120" y="100" width="6" height="4"/>
+                                            <rect x="150" y="100" width="6" height="4"/>
+                                            <rect x="135" y="115" width="6" height="4"/>
+                                            <rect x="120" y="130" width="6" height="4"/>
+                                            <rect x="150" y="130" width="6" height="4"/>
+                                        </g>
+
+                                        <!-- Tower 3: The Command Center (Main Spire) -->
+                                        <polygon points="210,240 210,50 240,20 270,50 270,240" fill="url(#bldgGrad1)" stroke="rgba(34,211,238,0.6)" stroke-width="1.5"/>
+                                        <line x1="240" y1="20" x2="240" y2="5" stroke="#22d3ee" stroke-width="2.5"/>
+                                        <circle cx="240" cy="5" r="4" fill="#38bdf8"/>
+                                        <line x1="210" y1="90" x2="270" y2="90" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+                                        <line x1="210" y1="140" x2="270" y2="140" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+                                        <!-- Glowing Beacon -->
+                                        <polygon points="230,10 250,10 270,180 210,180" fill="url(#cyanBeam)" opacity="0.25"/>
+
+                                        <!-- Tower 4: Right Smart Hub -->
+                                        <rect x="290" y="70" width="50" height="170" fill="url(#bldgGrad2)" stroke="rgba(34,211,238,0.4)" stroke-width="1"/>
+                                        <g fill="#38bdf8" opacity="0.9">
+                                            <rect x="300" y="85" width="8" height="5"/>
+                                            <rect x="320" y="85" width="8" height="5"/>
+                                            <rect x="300" y="105" width="8" height="5"/>
+                                            <rect x="320" y="105" width="8" height="5"/>
+                                            <rect x="300" y="125" width="8" height="5"/>
+                                            <rect x="320" y="125" width="8" height="5"/>
+                                        </g>
+
+                                        <!-- Tower 5: Far Right Residential/Smart Tower -->
+                                        <polygon points="360,240 360,80 395,50 430,80 430,240" fill="url(#bldgGrad1)" stroke="rgba(129,140,248,0.5)" stroke-width="1"/>
+                                        <line x1="395" y1="50" x2="395" y2="30" stroke="#818cf8" stroke-width="2"/>
+                                        <circle cx="395" cy="30" r="3" fill="#818cf8"/>
+
+                                        <!-- Data Network Optical Rays & Nodes -->
+                                        <path d="M 72 25 Q 140 10 240 5" fill="none" stroke="rgba(34,211,238,0.6)" stroke-width="1.5" stroke-dasharray="4,3"/>
+                                        <path d="M 240 5 Q 320 15 395 30" fill="none" stroke="rgba(129,140,248,0.6)" stroke-width="1.5" stroke-dasharray="4,3"/>
+                                        <circle cx="156" cy="18" r="3" fill="#22d3ee"/>
+                                        <circle cx="318" cy="17" r="3" fill="#818cf8"/>
+
+                                        <!-- Smart City Tag Pill Overlay -->
+                                        <g transform="translate(160, 215)">
+                                            <rect width="160" height="24" rx="12" fill="rgba(7,13,30,0.85)" stroke="rgba(34,211,238,0.5)" stroke-width="1"/>
+                                            <circle cx="15" cy="12" r="4" fill="#10b981"/>
+                                            <text x="26" y="16" fill="#f8fafc" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="bold">CIVIC TELEMETRY LIVE</text>
+                                        </g>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6 Key Performance Indicator Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+                        <!-- KPI 1: Total Available Budget -->
+                        <div class="glass-panel p-4 flex flex-col justify-between">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Total Budget (B)</span>
+                                <i class="fa-solid fa-vault text-cyan-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewBudget" class="text-2xl font-bold font-mono text-white">₹850 Cr</div>
+                                <span class="text-[11px] text-slate-400">SPV Corpus Allocation</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 2: Total Projects Under Consideration -->
+                        <div class="glass-panel p-4 flex flex-col justify-between">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Candidate Projects</span>
+                                <i class="fa-solid fa-list-ol text-sky-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewTotalProjects" class="text-2xl font-bold font-mono text-white">12</div>
+                                <span class="text-[11px] text-slate-400">Total Pipeline Initiatives</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 3: Selected Projects Count -->
+                        <div class="glass-panel p-4 flex flex-col justify-between border-l-2 border-l-emerald-500">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Funded Subset</span>
+                                <i class="fa-solid fa-check-circle text-emerald-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewFundedCount" class="text-2xl font-bold font-mono text-emerald-300">7 / 12</div>
+                                <span class="text-[11px] text-slate-400">Integer Optimal (xᵢ = 1)</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 4: Total Investment Required -->
+                        <div class="glass-panel p-4 flex flex-col justify-between">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Capital Outlay</span>
+                                <i class="fa-solid fa-coins text-indigo-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewOutlay" class="text-2xl font-bold font-mono text-white">₹845 Cr</div>
+                                <span id="kpiOverviewSlack" class="text-[11px] text-cyan-400 font-mono">Slack: ₹5 Cr</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 5: Expected Social Value (Z*) -->
+                        <div class="glass-panel p-4 flex flex-col justify-between border-l-2 border-l-cyan-500">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Optimal Social Value</span>
+                                <i class="fa-solid fa-trophy text-cyan-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewSocialValue" class="text-2xl font-bold font-mono text-cyan-300">₹2,369.7 Cr</div>
+                                <span id="kpiOverviewAvgSROI" class="text-[11px] text-slate-400">Weighted SROI: 28.1%</span>
+                            </div>
+                        </div>
+
+                        <!-- KPI 6: Budget Utilization % -->
+                        <div class="glass-panel p-4 flex flex-col justify-between">
+                            <div class="flex items-start justify-between">
+                                <span class="text-[11px] font-mono uppercase text-slate-400">Budget Utilization</span>
+                                <i class="fa-solid fa-chart-line text-emerald-400 text-sm"></i>
+                            </div>
+                            <div class="mt-2">
+                                <div id="kpiOverviewUtil" class="text-2xl font-bold font-mono text-white">99.4%</div>
+                                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden mt-1.5">
+                                    <div id="kpiOverviewUtilBar" class="bg-gradient-to-r from-cyan-500 to-emerald-400 h-full" style="width: 99.4%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optimization Summary & Progress Strip -->
+                    <div class="glass-panel p-5">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-3">
+                            <div class="flex items-center gap-3">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <h3 class="text-sm font-bold text-white tracking-wide uppercase font-mono">
+                                    Optimization Execution Summary
+                                </h3>
+                                <span id="overviewSolverBadge" class="pill pill-emerald text-[10px]">Optimal Solution Found</span>
+                            </div>
+                            <div class="text-xs font-mono text-slate-400">
+                                Solve Time: <span id="overviewSolveTime" class="text-cyan-300">0.0 ms</span> • Search Nodes: <span id="overviewNodes" class="text-white">0</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2 border-t border-slate-800/80 text-xs">
+                            <div>
+                                <span class="text-slate-400 block text-[11px]">Selected Capital Allocation:</span>
+                                <strong id="sumCapexText" class="text-white font-mono text-sm">₹845 Cr (99.4%)</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[11px]">Annual O&M (OPEX) Commitment:</span>
+                                <strong id="sumOpexText" class="text-indigo-300 font-mono text-sm">₹90 Cr / ₹95 Cr/yr</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[11px]">Carbon Abatement Achieved:</span>
+                                <strong id="sumCO2Text" class="text-emerald-400 font-mono text-sm">110 kT CO₂/yr</strong>
+                            </div>
+                            <div>
+                                <span class="text-slate-400 block text-[11px]">Citizens Benefited Directly:</span>
+                                <strong id="sumPopText" class="text-cyan-400 font-mono text-sm">82.5 Lakh Citizens</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Visual Analytics Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- Chart 1: Budget Allocation by Infrastructure Sector -->
+                        <div class="glass-panel p-5 flex flex-col justify-between">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                                <div>
+                                    <h4 class="text-xs font-mono uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-chart-pie text-cyan-400"></i> Capital Allocation by Sector
+                                    </h4>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Funded CAPEX distribution across sectors</p>
+                                </div>
+                            </div>
+                            <div class="relative h-56 flex items-center justify-center">
+                                <canvas id="chartSectorAllocation"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 2: Social Impact vs Investment Outlay -->
+                        <div class="glass-panel p-5 flex flex-col justify-between">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                                <div>
+                                    <h4 class="text-xs font-mono uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-chart-column text-indigo-400"></i> Project Impact vs Cost
+                                    </h4>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Social Value (sᵢ) relative to CAPEX (cᵢ)</p>
+                                </div>
+                            </div>
+                            <div class="relative h-56">
+                                <canvas id="chartCostImpact"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Chart 3: Selected vs Rejected Projects Comparison -->
+                        <div class="glass-panel p-5 flex flex-col justify-between">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+                                <div>
+                                    <h4 class="text-xs font-mono uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-scale-balanced text-emerald-400"></i> Portfolio Status Breakdown
+                                    </h4>
+                                    <p class="text-[11px] text-slate-400 mt-0.5">Selected (x=1) vs Rejected (x=0) capital</p>
+                                </div>
+                            </div>
+                            <div class="relative h-56">
+                                <canvas id="chartSelectedVsRejected"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ==================== PAGE 2: PROJECTS MANAGEMENT STUDIO ==================== -->
+                <section id="page-projects" class="page-view hidden space-y-6">
+                    <div class="glass-panel p-5 space-y-4">
+                        
+                        <!-- Header and Action Toolbar -->
+                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-city text-cyan-400"></i> Smart City Infrastructure Pipeline
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">
+                                    Manage, add, edit, or force policy overrides on candidate public initiatives.
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button onclick="openAddProjectModal()" class="btn-primary text-xs">
+                                    <i class="fa-solid fa-plus"></i> Add Project
+                                </button>
+                                <button onclick="resetDefaultConstraints()" class="btn-secondary text-xs">
+                                    <i class="fa-solid fa-rotate-left"></i> Restore Demo Projects
+                                </button>
+                                <div class="flex rounded-lg bg-slate-900 border border-slate-800 p-0.5">
+                                    <button onclick="setProjectViewMode('table')" id="btnViewTable" class="px-2.5 py-1 text-xs rounded-md bg-cyan-500/20 text-cyan-300 font-medium">
+                                        <i class="fa-solid fa-table"></i>
+                                    </button>
+                                    <button onclick="setProjectViewMode('cards')" id="btnViewCards" class="px-2.5 py-1 text-xs rounded-md text-slate-400 hover:text-white font-medium">
+                                        <i class="fa-solid fa-grip"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filters, Search & Sorters -->
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
+                            <!-- Search -->
+                            <div class="sm:col-span-5 relative">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500"></i>
+                                <input type="text" id="projectSearchInput" oninput="applyProjectFilters()" placeholder="Search projects by code, title, or keyword..." class="clean-input w-full pl-9">
+                            </div>
+
+                            <!-- Sector Filter -->
+                            <div class="sm:col-span-4">
+                                <select id="projectSectorFilter" onchange="applyProjectFilters()" class="clean-input w-full">
+                                    <option value="ALL">All Urban Sectors (6)</option>
+                                    <option value="Digital Governance">Digital Governance</option>
+                                    <option value="Clean Energy">Clean Energy</option>
+                                    <option value="Urban Mobility">Urban Mobility</option>
+                                    <option value="Water & Sanitation">Water & Sanitation</option>
+                                    <option value="Climate Resilience">Climate Resilience</option>
+                                    <option value="Social Infrastructure">Social Infrastructure</option>
+                                </select>
+                            </div>
+
+                            <!-- Sorter -->
+                            <div class="sm:col-span-3">
+                                <select id="projectSortOption" onchange="applyProjectFilters()" class="clean-input w-full">
+                                    <option value="ID_ASC">Sort: Default ID</option>
+                                    <option value="CAPEX_DESC">Cost: High to Low</option>
+                                    <option value="CAPEX_ASC">Cost: Low to High</option>
+                                    <option value="SROI_DESC">SROI %: High to Low</option>
+                                    <option value="SOCIAL_DESC">Social Value: High to Low</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- View 1: Projects Table -->
+                        <div id="projectTableViewContainer" class="overflow-x-auto rounded-xl border border-slate-800">
+                            <table class="civic-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Project Initiative & Sector</th>
+                                        <th class="text-right">CAPEX Outlay</th>
+                                        <th class="text-right">Annual OPEX</th>
+                                        <th class="text-right">SROI (%)</th>
+                                        <th class="text-right">Social Value ($s_i$)</th>
+                                        <th class="text-right">Impact Reach</th>
+                                        <th class="text-center">Policy Lock</th>
+                                        <th class="text-center">ILP Decision</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projectTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- View 2: Projects Cards Grid -->
+                        <div id="projectCardsViewContainer" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Populated dynamically -->
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ==================== PAGE 3: OPTIMIZATION WORKSPACE ==================== -->
+                <section id="page-optimization" class="page-view hidden space-y-6">
+                    
+                    <!-- Dedicated Budget & Parameter Configuration Studio -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        
+                        <!-- Left Panel: Budget & Sliders (5 Cols) -->
+                        <div class="lg:col-span-5 space-y-5">
+                            
+                            <!-- Fiscal & Impact Constraints Card -->
+                            <div class="glass-panel p-5 space-y-4">
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                    <div>
+                                        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono flex items-center gap-2">
+                                            <i class="fa-solid fa-sliders"></i> 1. Government Budget Caps ($b_m$)
+                                        </h3>
+                                        <p class="text-xs text-slate-400 mt-0.5">Specify available capital and sustainability caps</p>
+                                    </div>
+                                    <button onclick="resetDefaultConstraints()" class="text-xs text-slate-400 hover:text-cyan-400">Reset</button>
+                                </div>
+
+                                <!-- Slider 1: Capital Budget -->
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <label class="font-medium text-slate-200">Max Capital Budget ($B_{\text{capex}}$)</label>
+                                        <span class="font-mono font-bold text-cyan-400 text-sm" id="lblCapexBudget">₹850 Cr</span>
+                                    </div>
+                                    <input type="range" id="sliderCapex" min="150" max="1650" step="10" value="850" oninput="onConstraintChange()">
+                                    <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                        <span>₹150 Cr (Minimal)</span>
+                                        <span>Total Portfolio: <span id="lblTotalPortfolioCapex">₹1,635 Cr</span></span>
+                                    </div>
+                                </div>
+
+                                <!-- Slider 2: Annual OPEX Budget -->
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <label class="font-medium text-slate-200">Max Annual O&M Budget ($B_{\text{opex}}$)</label>
+                                        <span class="font-mono font-bold text-indigo-300 text-sm" id="lblOpexBudget">₹95 Cr/yr</span>
+                                    </div>
+                                    <input type="range" id="sliderOpex" min="20" max="180" step="5" value="95" oninput="onConstraintChange()">
+                                    <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                        <span>₹20 Cr/yr</span>
+                                        <span>Max Load: ₹168 Cr/yr</span>
+                                    </div>
+                                </div>
+
+                                <!-- Slider 3: Minimum Carbon Reduction Target -->
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <label class="font-medium text-slate-200">Min Carbon Abatement ($C_{\min}$)</label>
+                                        <span class="font-mono font-bold text-emerald-400 text-sm" id="lblMinCO2">45 kT CO₂/yr</span>
+                                    </div>
+                                    <input type="range" id="sliderMinCO2" min="0" max="150" step="5" value="45" oninput="onConstraintChange()">
+                                    <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                        <span>0 kT (Unconstrained)</span>
+                                        <span>150 kT/yr (Net-Zero Mandate)</span>
+                                    </div>
+                                </div>
+
+                                <!-- Slider 4: Minimum Citizen Reach -->
+                                <div class="space-y-1.5">
+                                    <div class="flex justify-between items-center text-xs">
+                                        <label class="font-medium text-slate-200">Min Citizen Beneficiaries ($P_{\min}$)</label>
+                                        <span class="font-mono font-bold text-amber-400 text-sm" id="lblMinPop">15.0 Lakhs</span>
+                                    </div>
+                                    <input type="range" id="sliderMinPop" min="0" max="45" step="1" value="15" oninput="onConstraintChange()">
+                                    <div class="flex justify-between text-[10px] font-mono text-slate-500">
+                                        <span>0 Lakhs</span>
+                                        <span>45 Lakhs (City-wide Reach)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Structural & Coupling Constraints Card -->
+                            <div class="glass-panel p-5 space-y-3">
+                                <div class="border-b border-slate-800 pb-2.5">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-400 font-mono flex items-center gap-2">
+                                        <i class="fa-solid fa-diagram-project"></i> 2. Logical Interdependency Rules
+                                    </h3>
+                                    <p class="text-xs text-slate-400 mt-0.5">Linear technological constraints</p>
+                                </div>
+
+                                <!-- Toggle 1: ICCC Prerequisite -->
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                    <input type="checkbox" id="chkDependencyICCC" checked onchange="onConstraintChange()" class="mt-1 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+                                    <div class="text-xs">
+                                        <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                                            Digital Backbone Prerequisite
+                                            <span class="pill pill-cyan text-[10px]">x₅ ≤ x₁, x₁₀ ≤ x₁</span>
+                                        </div>
+                                        <p class="text-slate-400 mt-0.5 leading-relaxed text-[11px]">
+                                            Traffic AI (P5) & Flood Telemetry (P10) depend on Command Center (P1).
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Toggle 2: Transit Corridor Exclusivity -->
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                    <input type="checkbox" id="chkExclusivityTransit" checked onchange="onConstraintChange()" class="mt-1 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+                                    <div class="text-xs">
+                                        <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                                            Corridor Mutual Exclusivity
+                                            <span class="pill pill-rose text-[10px]">x₃ + x₁₁ ≤ 1</span>
+                                        </div>
+                                        <p class="text-slate-400 mt-0.5 leading-relaxed text-[11px]">
+                                            Cannot fund both Electric Bus Fleet (P3) and Diesel BRT (P11) on same corridor.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Toggle 3: Basic Services Equity Mandate -->
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                    <input type="checkbox" id="chkSectorFloor" checked onchange="onConstraintChange()" class="mt-1 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+                                    <div class="text-xs">
+                                        <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                                            Basic Services Equity Mandate
+                                            <span class="pill pill-emerald text-[10px]">∑ x_water ≥ 1, ∑ x_energy ≥ 1</span>
+                                        </div>
+                                        <p class="text-slate-400 mt-0.5 leading-relaxed text-[11px]">
+                                            Guarantees at least one Water/Sanitation and one Clean Energy project.
+                                        </p>
+                                    </div>
+                                </label>
+
+                                <!-- Toggle 4: Green Grid Synergy Coupling -->
+                                <label class="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+                                    <input type="checkbox" id="chkSolarEbusDep" onchange="onConstraintChange()" class="mt-1 rounded bg-slate-800 border-slate-700 text-cyan-500 focus:ring-0">
+                                    <div class="text-xs">
+                                        <div class="font-semibold text-slate-200 flex items-center gap-1.5">
+                                            Green Grid Synergy Coupling
+                                            <span class="pill pill-amber text-[10px]">x₃ ≤ x₂</span>
+                                        </div>
+                                        <p class="text-slate-400 mt-0.5 leading-relaxed text-[11px]">
+                                            Requires Solar Microgrid (P2) if E-Bus Fast-Charging Depots (P3) are chosen.
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                        </div>
+
+                        <!-- Right Panel: Sensitivity Canvas & Search Telemetry (7 Cols) -->
+                        <div class="lg:col-span-7 space-y-5">
+                            
+                            <!-- Interactive Pareto Sensitivity Frontier Chart -->
+                            <div class="glass-panel p-5">
+                                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-4">
+                                    <div>
+                                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                            <i class="fa-solid fa-chart-line text-cyan-400"></i> Capital Budget Pareto Frontier
+                                        </h3>
+                                        <p class="text-xs text-slate-400">
+                                            Solves 31 independent 0-1 ILP instances across $B_{\text{capex}} \in [150, 1650]$ Cr.
+                                        </p>
+                                    </div>
+                                    <span class="pill pill-cyan">Non-Convex Step Frontier</span>
+                                </div>
+
+                                <div class="relative w-full h-[300px] bg-slate-950/70 rounded-xl border border-slate-800 p-2">
+                                    <canvas id="paretoCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+                                </div>
+
+                                <div class="mt-3 flex flex-wrap items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Exact 0-1 ILP</span>
+                                        <span class="flex items-center gap-1.5"><span class="w-3 h-0.5 bg-amber-400 inline-block"></span> Greedy Heuristic</span>
+                                        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span> Active Budget Point</span>
+                                    </div>
+                                    <span class="font-mono text-[11px] text-cyan-400">Click chart or hover to jump to budget</span>
+                                </div>
+                            </div>
+
+                            <!-- Branch & Bound Execution Telemetry Log -->
+                            <div class="glass-panel p-5 space-y-3">
+                                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                    <div>
+                                        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                            <i class="fa-solid fa-network-wired text-indigo-400"></i> Branch-and-Bound Search Tree Diagnostics
+                                        </h3>
+                                        <p class="text-xs text-slate-400">Continuous LP relaxation upper bounding execution</p>
+                                    </div>
+                                    <span id="solveTimeBadge" class="pill pill-emerald">0.0 ms</span>
+                                </div>
+
+                                <!-- Node Stats Grid -->
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                                    <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                                        <span class="text-[10px] font-mono text-slate-400 uppercase">Nodes Explored</span>
+                                        <div id="bbNodesExplored" class="text-lg font-bold font-mono text-white mt-0.5">0</div>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                                        <span class="text-[10px] font-mono text-slate-400 uppercase">Pruned (Bound)</span>
+                                        <div id="bbPrunedBound" class="text-lg font-bold font-mono text-cyan-400 mt-0.5">0</div>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                                        <span class="text-[10px] font-mono text-slate-400 uppercase">Pruned (Infeas)</span>
+                                        <div id="bbPrunedInfeas" class="text-lg font-bold font-mono text-rose-400 mt-0.5">0</div>
+                                    </div>
+                                    <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+                                        <span class="text-[10px] font-mono text-slate-400 uppercase">Incumbents</span>
+                                        <div id="bbIncumbents" class="text-lg font-bold font-mono text-emerald-400 mt-0.5">0</div>
+                                    </div>
+                                </div>
+
+                                <!-- Live Trace Box -->
+                                <div class="text-xs font-mono text-slate-400 flex justify-between">
+                                    <span>Incumbent Discovery & Pruning Trace:</span>
+                                    <span id="bbSearchEfficiency" class="text-emerald-400">0% Pruned</span>
+                                </div>
+                                <div id="bbTraceLog" class="h-44 overflow-y-auto rounded-xl bg-slate-950 border border-slate-800/80 p-3 font-mono text-[11px] space-y-1 text-slate-300">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+                </section>
+
+                <!-- ==================== PAGE 4: RESULTS & INSIGHTS ==================== -->
+                <section id="page-results" class="page-view hidden space-y-6">
+                    
+                    <!-- Section A: Investment Summary Strip -->
+                    <div class="glass-panel p-5">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-square-poll-vertical text-emerald-400"></i> Operations Research Solution Portfolio
+                                </h3>
+                                <p class="text-xs text-slate-400 mt-0.5">Academic presentation view: investment allocation and proof of optimality</p>
+                            </div>
+                            <span id="resultsStatusBadge" class="pill pill-emerald text-xs">PROVEN GLOBAL OPTIMUM</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 font-mono text-xs">
+                            <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <span class="text-slate-400 block text-[11px]">Budget Corpus ($B$):</span>
+                                <strong id="resBudget" class="text-white text-base">₹850 Cr</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <span class="text-slate-400 block text-[11px]">Selected CAPEX Outlay:</span>
+                                <strong id="resOutlay" class="text-cyan-300 text-base">₹845 Cr</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <span class="text-slate-400 block text-[11px]">Budget Slack Remaining:</span>
+                                <strong id="resSlack" class="text-emerald-400 text-base">₹5 Cr</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <span class="text-slate-400 block text-[11px]">Max Social Return ($Z^*$):</span>
+                                <strong id="resSocialValue" class="text-cyan-400 text-base">₹2,369.7 Cr</strong>
+                            </div>
+                            <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                <span class="text-slate-400 block text-[11px]">Funded Ratio:</span>
+                                <strong id="resRatio" class="text-indigo-300 text-base">7 / 12 (58%)</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section B & C: Selected vs Rejected Tables -->
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        
+                        <!-- Section B: Selected Projects Portfolio Table (7 Cols) -->
+                        <div class="lg:col-span-7 glass-panel p-5 space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div>
+                                    <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                        <i class="fa-solid fa-circle-check text-emerald-400"></i> Selected Project Portfolio ($x_i^* = 1$)
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Funded initiatives maximizing the multi-criteria social objective</p>
+                                </div>
+                                <span id="fundedCountBadge" class="pill pill-emerald">7 Funded</span>
+                            </div>
+
+                            <div class="overflow-x-auto rounded-xl border border-slate-800">
+                                <table class="civic-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Initiative Title</th>
+                                            <th>Sector</th>
+                                            <th class="text-right">CAPEX</th>
+                                            <th class="text-right">SROI (%)</th>
+                                            <th class="text-right">Social Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsSelectedTableBody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Section C: Rejected Projects Table with Rationale (5 Cols) -->
+                        <div class="lg:col-span-5 glass-panel p-5 space-y-3">
+                            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                                <div>
+                                    <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                        <i class="fa-solid fa-circle-xmark text-slate-500"></i> Rejected Projects ($x_i^* = 0$)
+                                    </h4>
+                                    <p class="text-xs text-slate-400">Unfunded initiatives and mathematical rationale</p>
+                                </div>
+                                <span id="rejectedCountBadge" class="pill pill-neutral">5 Rejected</span>
+                            </div>
+
+                            <div class="overflow-x-auto rounded-xl border border-slate-800">
+                                <table class="civic-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Code</th>
+                                            <th>Project</th>
+                                            <th class="text-right">Cost</th>
+                                            <th>Mathematical Rationale</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="resultsRejectedTableBody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Section D: Mathematical Decision Vector Representation -->
+                    <div class="glass-panel p-5 space-y-4">
+                        <div class="border-b border-slate-800 pb-3">
+                            <h4 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-square-root-variable text-cyan-400"></i> Mathematical Decision Vector & Optimality Proof
+                            </h4>
+                            <p class="text-xs text-slate-400">
+                                Exact binary decision vector representing the optimal solution point in $\{0,1\}^n$ state space.
+                            </p>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs overflow-x-auto">
+                            <div class="text-slate-400 text-[11px] mb-2 uppercase tracking-wider">Optimal Decision Vector ($x^*$):</div>
+                            <div id="resultsDecisionVector" class="text-sm text-cyan-300 font-bold whitespace-nowrap">
+                                x* = [ 1, 0, 1, 1, 1, 0, 1, 0, 0, 1, 0, 1 ]
+                            </div>
+                            <div id="resultsVectorBreakdown" class="mt-3 pt-3 border-t border-slate-800/80 text-[11px] text-slate-300 flex flex-wrap gap-2">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Code Export Toolbar -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                            <span class="text-xs text-slate-400">Export reproducible mathematical model for presentation:</span>
+                            <div class="flex gap-2">
+                                <button onclick="exportCSV()" class="btn-secondary text-xs">
+                                    <i class="fa-solid fa-file-csv text-emerald-400"></i> Export CSV
+                                </button>
+                                <button onclick="navigateTo('methodology')" class="btn-accent text-xs">
+                                    <i class="fa-solid fa-graduation-cap"></i> View OR Methodology
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+
+                <!-- ==================== PAGE 5: METHODOLOGY / ABOUT ==================== -->
+                <section id="page-methodology" class="page-view hidden space-y-6">
+                    <div class="glass-panel p-6 space-y-6">
+                        
+                        <div class="border-b border-slate-800 pb-4">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono mb-2">
+                                <i class="fa-solid fa-book-open"></i> Operations Research Academic Presentation
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">
+                                Mathematical Capital Rationing Model Formulation
+                            </h2>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
+                                Formulating public infrastructure resource allocation as a Multi-Dimensional 0-1 Integer Linear Program (0-1 ILP) to maximize Social Return on Investment under fiscal and environmental constraints.
+                            </p>
+                        </div>
+
+                        <!-- Step 1: Decision Variables -->
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">1. Binary Decision Variables</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Because large municipal assets (Command Centres, Water Treatment Plants, Bus Rapid Transit) cannot be built fractionally and still deliver full public utility, we define binary decision variables $x_i \in \{0, 1\}$ for each candidate project $i \in \{1, \dots, n\}$:
+                            </p>
+                            <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-center text-xs text-cyan-300">
+                                $$x_i \in \{0, 1\} \quad \text{where } x_i = 1 \text{ if funded, } 0 \text{ otherwise}$$
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Objective Function -->
+                        <div class="space-y-2">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono">2. Objective Function: Maximize Net Social Welfare</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                Let $c_i$ be the capital outlay (₹ Crores) and $\text{SROI}_i$ be the composite Social Rate of Interest percentage (capturing economic time savings, public health, and avoided damages). Net social value generated by project $i$ is $s_i = c_i \cdot \left(\frac{\text{SROI}_i}{10}\right)$.
+                            </p>
+                            <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-emerald-300 text-sm">
+                                $$\text{Maximize } Z = \sum_{i=1}^n s_i \cdot x_i = \sum_{i=1}^n \left(c_i \cdot \frac{\text{SROI}_i}{10}\right) \cdot x_i$$
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Constraints -->
+                        <div class="space-y-3">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 font-mono">3. Resource, Environmental & Structural Constraints</h3>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                                <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                    <strong class="text-white block mb-1">A. Capital Ceiling ($B_{\text{capex}}$):</strong>
+                                    <span class="text-slate-400">Total upfront outlay cannot exceed corpus.</span>
+                                    <div class="mt-2 text-cyan-300 font-mono">$$\sum_{i=1}^n c_i x_i \le B_{\text{capex}}$$</div>
+                                </div>
+                                <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                    <strong class="text-white block mb-1">B. Annual OPEX Cap ($B_{\text{opex}}$):</strong>
+                                    <span class="text-slate-400">Prevents recurring municipal insolvency.</span>
+                                    <div class="mt-2 text-indigo-300 font-mono">$$\sum_{i=1}^n o_i x_i \le B_{\text{opex}}$$</div>
+                                </div>
+                                <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                    <strong class="text-white block mb-1">C. Climate & Citizen Mandates:</strong>
+                                    <span class="text-slate-400">Minimum statutory impact floors.</span>
+                                    <div class="mt-2 text-emerald-300 font-mono">$$\sum e_i x_i \ge C_{\min}, \quad \sum p_i x_i \ge P_{\min}$$</div>
+                                </div>
+                                <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+                                    <strong class="text-white block mb-1">D. Digital Backbone Coupling:</strong>
+                                    <span class="text-slate-400">ITMS & Flood Grid require Command Center.</span>
+                                    <div class="mt-2 text-sky-300 font-mono">$$x_5 - x_1 \le 0, \quad x_{10} - x_1 \le 0$$</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 4: Why Greedy SROI Ranking Fails -->
+                        <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i> Why Greedy SROI Ranking Fails (Operations Research Proof)
+                            </h3>
+                            <p class="text-xs text-slate-300 leading-relaxed">
+                                A naive approach commonly found in public budgeting is ranking projects by highest benefit-cost ratio ($\text{SROI}_i$) and funding greedily. In Integer Programming, this fails for three structural reasons:
+                            </p>
+                            <ol class="space-y-2 text-xs text-slate-300 list-decimal list-inside">
+                                <li><strong>Indivisibility ("Lumpy" Capital Outlays):</strong> High-ratio projects leave stranded budget slack that cannot fit other candidates, whereas complementary mid-sized projects fully exhaust the corpus for higher net return.</li>
+                                <li><strong>Network Backbone Contingencies ($x_j \le x_k$):</strong> Core assets like Command Centres have moderate standalone SROI, but enable high-value downstream systems. Greedy ranking rejects or delays the backbone.</li>
+                                <li><strong>Multi-Dimensional Constraints:</strong> Single-ratio ranking cannot concurrently balance capital expenditure, annual operations ceilings, and statutory carbon floors.</li>
+                            </ol>
+                        </div>
+
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Bottom System Footer -->
+            <footer class="border-t border-slate-800/80 bg-[#070d1e] py-3 px-4 lg:px-8 text-xs text-slate-500">
+                <div class="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+                    <div>
+                        <strong>CIVICGRID Smart City Investment Optimizer</strong> — Academic Operations Research Presentation Edition.
+                    </div>
+                    <div class="font-mono text-slate-400">
+                        NITI Aayog / MoHUA Infrastructure Appraisal Norms (₹ Crores)
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- ==================== MODALS ==================== -->
+    
+    <!-- Add Project Modal -->
+    <div id="addProjectModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-folder-plus text-cyan-400"></i> Add Candidate Infrastructure Project
+                </h3>
+                <button onclick="closeAddProjectModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleFormSubmitAddProject(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="sm:col-span-2">
+                    <label class="block text-slate-300 font-medium mb-1">Project Title</label>
+                    <input type="text" id="newProjName" required placeholder="e.g., Smart Heritage Riverfront & Bio-Remediation" class="clean-input w-full">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Urban Sector</label>
+                    <select id="newProjSector" class="clean-input w-full">
+                        <option value="Digital Governance">Digital Governance</option>
+                        <option value="Clean Energy">Clean Energy</option>
+                        <option value="Urban Mobility">Urban Mobility</option>
+                        <option value="Water & Sanitation">Water & Sanitation</option>
+                        <option value="Climate Resilience">Climate Resilience</option>
+                        <option value="Social Infrastructure">Social Infrastructure</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">CAPEX Outlay (₹ Crores)</label>
+                    <input type="number" id="newProjCapex" value="110" min="1" max="1000" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Annual OPEX (₹ Crores/yr)</label>
+                    <input type="number" id="newProjOpex" value="9" min="0" max="200" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Estimated SROI (%)</label>
+                    <input type="number" id="newProjSROI" value="24.5" step="0.5" min="1" max="100" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Citizens Benefited (Lakhs)</label>
+                    <input type="number" id="newProjPop" value="4.5" step="0.5" min="0" max="100" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Carbon Abatement (kT CO₂/yr)</label>
+                    <input type="number" id="newProjCO2" value="12" step="1" min="0" max="200" required class="clean-input w-full font-mono">
+                </div>
+
+                <div class="sm:col-span-2 flex justify-end gap-2 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeAddProjectModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Add & Re-Optimize</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div id="editProjectModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-panel max-w-lg w-full p-6 border border-slate-700 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-cyan-400"></i> Edit Project Parameters
+                </h3>
+                <button onclick="closeEditProjectModal()" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleFormSubmitEditProject(event)" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <input type="hidden" id="editProjIndex">
+                <div class="sm:col-span-2">
+                    <label class="block text-slate-300 font-medium mb-1">Project Title</label>
+                    <input type="text" id="editProjName" required class="clean-input w-full">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Urban Sector</label>
+                    <select id="editProjSector" class="clean-input w-full">
+                        <option value="Digital Governance">Digital Governance</option>
+                        <option value="Clean Energy">Clean Energy</option>
+                        <option value="Urban Mobility">Urban Mobility</option>
+                        <option value="Water & Sanitation">Water & Sanitation</option>
+                        <option value="Climate Resilience">Climate Resilience</option>
+                        <option value="Social Infrastructure">Social Infrastructure</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">CAPEX Outlay (₹ Crores)</label>
+                    <input type="number" id="editProjCapex" min="1" max="1000" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Annual OPEX (₹ Crores/yr)</label>
+                    <input type="number" id="editProjOpex" min="0" max="200" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Estimated SROI (%)</label>
+                    <input type="number" id="editProjSROI" step="0.5" min="1" max="100" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Citizens Benefited (Lakhs)</label>
+                    <input type="number" id="editProjPop" step="0.5" min="0" max="100" required class="clean-input w-full font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-medium mb-1">Carbon Abatement (kT CO₂/yr)</label>
+                    <input type="number" id="editProjCO2" step="1" min="0" max="200" required class="clean-input w-full font-mono">
+                </div>
+
+                <div class="sm:col-span-2 flex justify-end gap-2 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeEditProjectModal()" class="btn-secondary">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Core Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
